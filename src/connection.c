@@ -297,6 +297,30 @@ Connection__close(pycbc_Connection *self)
     Py_RETURN_NONE;
 }
 
+static PyObject *
+Connection_refresh_config(pycbc_Connection *self)
+{
+#if LCB_VERSION < 0x020400
+    PyErr_WarnEx(PyExc_RuntimeWarning,
+        "refresh_config requires libcouchbase >= 2.4", 1);
+    Py_RETURN_NONE;
+
+#else
+    if (pycbc_oputil_conn_lock(self) != 0) {
+        return -1;
+    }
+
+    lcb_refresh_config(self->instance);
+    if (! (self->flags & PYCBC_CONN_F_ASYNC)) {
+        PYCBC_CONN_THR_BEGIN(self);
+        lcb_wait3(self->instance, LCB_WAIT_NOCHECK);
+        PYCBC_CONN_THR_END(self);
+    }
+    pycbc_oputil_conn_unlock(self);
+    Py_RETURN_NONE;
+#endif
+}
+
 static void
 timings_callback(lcb_t instance,
                  const void *cookie,
@@ -641,6 +665,24 @@ static PyMethodDef Connection_TABLE_methods[] = {
                 PyDoc_STR("Returns a tuple of (vbucket, server index) for a key")
         },
 
+        { "refresh_config",
+                (PyCFunction)Connection_refresh_config,
+                METH_NOARGS,
+                PyDoc_STR(
+                "Forcefully request a cluster configuration\n\n"
+                "This method will request a new configuration from the cluster\n"
+                "bypassing the default throttling heuristics within the library.\n"
+                "This may be useful if the default configuration refresh thresholds\n"
+                "are insufficient for your application, or if your application\n"
+                "is informed that the topology has been changed through some\n"
+                "other, out-of-band mechanism."
+                "\n\n"
+                ".. note::\n\n"
+                "  This method requires libcouchbase 2.4 or greater to be installed\n")
+                "\n\n"
+                ":return: This method has no return value, as it merely hints to\n"
+                "  the library that a new configuration should be fetched"
+        },
         { NULL, NULL, 0, NULL }
 };
 
