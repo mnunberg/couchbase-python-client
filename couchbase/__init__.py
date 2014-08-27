@@ -84,56 +84,42 @@ def set_pickle_converters(encode, decode):
 class Couchbase:
     """The base class for interacting with Couchbase"""
     @staticmethod
-    def connect(bucket=None,
-                host='localhost',
-                port=8091,
-                password=None,
-                quiet=False,
-                config_cache=None,
-                unlock_gil=True,
-                timeout=2.5,
-                transcoder=None,
-                lockmode=LOCKMODE_EXC,
-                **kwargs):
+    def connect(connection_string, password=None, quiet=False, unlock_gil=True,
+                transcoder=None, lockmode=LOCKMODE_EXC, **kwargs):
         """Connect to a bucket.
 
-        :param host: the hostname or IP address of the node.
-          This can be a list or tuple of multiple nodes; the nodes can either
-          be simple strings, or (host, port) tuples (in which case the `port`
-          parameter from the method arguments is ignored).
-        :type host: string or list
+        :param string connection_string:
+          The connection string to use for connecting to the bucket. The
+          connection string is a URI-like string allowing specifying multiple
+          hosts and a bucket name.
 
-        :param number port: port of the management API.
+          Additional options may also be supplied to the connection string:
 
-          .. note::
+          - ``config_total_timeout``. Number of seconds to wait for the client
+            bootstrap to complete.
 
-            The value specified here is the same port used to access
-            The couchbase REST UI (typically `8091`). If you have selcted
-            an alternate port for your bucket, do *not* put it here. The
-            configuration information obtained via the REST interface will
-            automatically instruct the client (one ``connect()`` is called)
-            about which bucket port to connect to. Note that bucket ports
-            are typically ``112xx`` - don't use these for the `port`
-            parameter.
+          - ``config_node_timeout``. Maximum number of time to wait (in seconds)
+            to attempt to bootstrap from the current node. If the bootstrap times
+            out (and the ``config_total_timeout`` setting is not reached), the
+            bootstrap is then attempted from the next node (or an exception is
+            raised if no more nodes remain).
+
+          - ``config_cache``. If set, this will refer to a file on the
+            filesystem where cached "bootstrap" information may be stored. This
+            path may be shared among multiple instance of the Couchbase client.
+            Using this option may reduce overhead when using many short-lived
+            instances of the client.
+
+            If the file does not exist, it will be created.
+
 
         :param string password: the password of the bucket
-
-        :param string bucket: the bucket name
 
         :param boolean quiet: the flag controlling whether to raise an
           exception when the client executes operations on non-existent
           keys. If it is `False` it will raise
           :exc:`couchbase.exceptions.NotFoundError` exceptions. When set
           to `True` the operations will return `None` silently.
-
-        :param string config_cache: If set, this will refer to a file on the
-          filesystem where cached "bootstrap" information may be stored. This
-          path may be shared among multiple instance of the Couchbase client.
-          Using this option may reduce overhead when using many short-lived
-          instances of the client.
-          In older releases this was called ``conncache`` and will be aliased.
-
-          If the file does not exist, it will be created.
 
         :param boolean unlock_gil: If set (which is the default), the
           connection object will release the python GIL when possible, allowing
@@ -144,11 +130,6 @@ class Couchbase:
 
           You may turn this off for some performance boost and you are certain
           your application is not using threads
-
-        :param float timeout:
-          Set the timeout in seconds. If an operation takes longer than this
-          many seconds, the method will return with an error. You may set this
-          higher if you have slow network conditions.
 
         :param transcoder:
           Set the transcoder object to use. This should conform to the
@@ -194,26 +175,21 @@ class Couchbase:
         Initialize connection using default options::
 
             from couchbase import Couchbase
-            cb = Couchbase.connect(bucket='mybucket')
+            cb = Couchbase.connect('couchbase:///mybucket')
 
         Connect to protected bucket::
 
-            cb = Couchbase.connect(password='secret', bucket='protected')
+            cb = Couchbase.connect('couchbase:///protected', password='secret')
 
-        Connect to a different server on the default port 8091::
+        Connect using a list of servers::
 
-            cb = Couchbase.connect(host='example.com',
-                                   password='secret', bucket='mybucket')
+            cb = Couchbase.connect('couchbase://host1,host2,host3/mybucket')
+
+        Connect using SSL::
+
+            cb = Couchbase.connect('couchbases://securehost/bucketname?certpath=/var/cb-cert.pem')
 
         """
-        return Connection(host=host,
-                          port=port,
-                          password=password,
-                          bucket=bucket,
-                          unlock_gil=unlock_gil,
-                          timeout=timeout,
-                          transcoder=transcoder,
-                          quiet=quiet,
-                          lockmode=lockmode,
-                          config_cache=config_cache,
-                          **kwargs)
+        return Connection(connection_string=connection_string, password=password,
+                          unlock_gil=unlock_gil, transcoder=transcoder,
+                          quiet=quiet, lockmode=lockmode, **kwargs)
