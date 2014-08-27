@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from warnings import warn
 
-from couchbase.connection import Connection
 from couchbase.user_constants import *
 import couchbase._libcouchbase as _LCB
 
@@ -80,116 +80,10 @@ def set_pickle_converters(encode, decode):
     ret = _LCB._modify_helpers(pickle_encode=encode, pickle_decode=decode)
     return (ret['pickle_encode'], ret['pickle_decode'])
 
+class Couchbase(object):
+    @classmethod
+    def connect(self, *args, **kwargs):
+        warn("Use the Bucket (in couchbase.bucket) constructor instead", DeprecationWarning)
+        from couchbase.bucket import Bucket
+        return Bucket(*args, **kwargs)
 
-class Couchbase:
-    """The base class for interacting with Couchbase"""
-    @staticmethod
-    def connect(connection_string, password=None, quiet=False, unlock_gil=True,
-                transcoder=None, lockmode=LOCKMODE_EXC, **kwargs):
-        """Connect to a bucket.
-
-        :param string connection_string:
-          The connection string to use for connecting to the bucket. The
-          connection string is a URI-like string allowing specifying multiple
-          hosts and a bucket name.
-
-          Additional options may also be supplied to the connection string:
-
-          - ``config_total_timeout``. Number of seconds to wait for the client
-            bootstrap to complete.
-
-          - ``config_node_timeout``. Maximum number of time to wait (in seconds)
-            to attempt to bootstrap from the current node. If the bootstrap times
-            out (and the ``config_total_timeout`` setting is not reached), the
-            bootstrap is then attempted from the next node (or an exception is
-            raised if no more nodes remain).
-
-          - ``config_cache``. If set, this will refer to a file on the
-            filesystem where cached "bootstrap" information may be stored. This
-            path may be shared among multiple instance of the Couchbase client.
-            Using this option may reduce overhead when using many short-lived
-            instances of the client.
-
-            If the file does not exist, it will be created.
-
-
-        :param string password: the password of the bucket
-
-        :param boolean quiet: the flag controlling whether to raise an
-          exception when the client executes operations on non-existent
-          keys. If it is `False` it will raise
-          :exc:`couchbase.exceptions.NotFoundError` exceptions. When set
-          to `True` the operations will return `None` silently.
-
-        :param boolean unlock_gil: If set (which is the default), the
-          connection object will release the python GIL when possible, allowing
-          other (Python) threads to function in the background. This should be
-          set to true if you are using threads in your application (and is the
-          default), as otherwise all threads will be blocked while couchbase
-          functions execute.
-
-          You may turn this off for some performance boost and you are certain
-          your application is not using threads
-
-        :param transcoder:
-          Set the transcoder object to use. This should conform to the
-          interface in the documentation (it need not actually be a subclass).
-          This can be either a class type to instantiate, or an initialized
-          instance.
-        :type transcoder: :class:`couchbase.transcoder.Transcoder`
-
-        :param lockmode:
-          The *lockmode* for threaded access. See :ref:`multiple_threads`
-          for more information.
-
-        :param boolean experimental_gevent_support:
-          This boolean value specifies whether *experimental*
-          support for `gevent` should be used. Experimental support is supplied
-          by substituting the built-in libcouchbase I/O functions with their
-          monkey-patched `gevent` equivalents. Note that
-          `gevent.monkey_patch_all` (or similar) must have already been called
-          in order to ensure that the cooperative socket methods are called.
-
-          .. warning::
-
-            As the parameter name implies, this feature is experimental. This
-            means it may crash or hang your application. While no known issues
-            have been discovered at the time of writing, it has not been
-            sufficiently tested and as such is marked as experimental.
-
-            API and implementation of this feature are subject to change.
-
-        :raise: :exc:`couchbase.exceptions.BucketNotFoundError` if there
-                is no such bucket to connect to
-
-                :exc:`couchbase.exceptions.ConnectError` if the socket
-                wasn't accessible (doesn't accept connections or doesn't
-                respond in time)
-
-                :exc:`couchbase.exceptions.ArgumentError`
-                if the bucket wasn't specified
-
-        :return: instance of :class:`couchbase.connection.Connection`
-
-
-        Initialize connection using default options::
-
-            from couchbase import Couchbase
-            cb = Couchbase.connect('couchbase:///mybucket')
-
-        Connect to protected bucket::
-
-            cb = Couchbase.connect('couchbase:///protected', password='secret')
-
-        Connect using a list of servers::
-
-            cb = Couchbase.connect('couchbase://host1,host2,host3/mybucket')
-
-        Connect using SSL::
-
-            cb = Couchbase.connect('couchbases://securehost/bucketname?certpath=/var/cb-cert.pem')
-
-        """
-        return Connection(connection_string=connection_string, password=password,
-                          unlock_gil=unlock_gil, transcoder=transcoder,
-                          quiet=quiet, lockmode=lockmode, **kwargs)
