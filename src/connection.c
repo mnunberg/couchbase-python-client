@@ -173,21 +173,6 @@ Bucket__instance_pointer(pycbc_Bucket *self, void *unused)
 }
 
 static PyObject *
-Bucket_lcb_version(pycbc_Bucket *self)
-{
-    const char *verstr;
-    lcb_uint32_t vernum;
-    PyObject *ret;
-
-    verstr = lcb_get_version(&vernum);
-    ret = Py_BuildValue("(s,k)", verstr, vernum);
-
-    (void)self;
-
-    return ret;
-}
-
-static PyObject *
 Bucket__thr_lockop(pycbc_Bucket *self, PyObject *arg)
 {
     int rv;
@@ -476,26 +461,6 @@ static PyMethodDef Bucket_TABLE_methods[] = {
 
 #undef OPFUNC
 
-        { "lcb_version",
-                (PyCFunction)Bucket_lcb_version,
-                METH_NOARGS|METH_STATIC,
-                PyDoc_STR(
-                "Get `libcouchbase` version information\n"
-                "\n"
-                ":return: a tuple of ``(version_string, version_number)``\n"
-                "  corresponding to the underlying libcouchbase version\n"
-
-                "Show the versions ::\n" \
-                "   \n"
-                "   verstr, vernum = Connection.lcb_version()\n"
-                "   print('0x{0:x}'.format(vernum))\n"
-                "   # 0x020005\n"
-                "   \n"
-                "   print(verstr)\n"
-                "   # 2.0.5\n"
-                "\n"
-                "\n")
-        },
 
         { "_thr_lockop",
                 (PyCFunction)Bucket__thr_lockop,
