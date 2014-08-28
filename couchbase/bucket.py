@@ -285,8 +285,8 @@ class Bucket(_Base):
     # We have these wrappers so that IDEs can do param tooltips and the like.
     # we might move this directly into C some day
 
-    def set(self, key, value, cas=0, ttl=0, format=None,
-            persist_to=0, replicate_to=0):
+    def upsert(self, key, value, cas=0, ttl=0, format=None,
+               persist_to=0, replicate_to=0):
         """Unconditionally store the object in Couchbase.
 
         :param key: The key to set the value with. By default, the key must be
@@ -358,10 +358,10 @@ class Bucket(_Base):
         .. seealso:: :meth:`set_multi`
 
         """
-        return _Base.set(self, key, value, cas, ttl, format,
-                         persist_to, replicate_to)
+        return _Base.upsert(self, key, value, cas, ttl, format,
+                            persist_to, replicate_to)
 
-    def add(self, key, value, ttl=0, format=None, persist_to=0, replicate_to=0):
+    def insert(self, key, value, ttl=0, format=None, persist_to=0, replicate_to=0):
         """
         Store an object in Couchbase unless it already exists.
 
@@ -380,8 +380,8 @@ class Bucket(_Base):
         .. seealso:: :meth:`set`, :meth:`add_multi`
 
         """
-        return _Base.add(self, key, value, ttl=ttl, format=format,
-                         persist_to=persist_to, replicate_to=replicate_to)
+        return _Base.insert(self, key, value, ttl=ttl, format=format,
+                            persist_to=persist_to, replicate_to=replicate_to)
 
     def replace(self, key, value, cas=0, ttl=0, format=None,
                 persist_to=0, replicate_to=0):
@@ -653,7 +653,7 @@ class Bucket(_Base):
         """
         return _Base.unlock(self, key, cas=cas)
 
-    def delete(self, key, cas=0, quiet=None, persist_to=0, replicate_to=0):
+    def remove(self, key, cas=0, quiet=None, persist_to=0, replicate_to=0):
         """Remove the key-value entry for a given key in Couchbase.
 
         :param key: A string which is the key to delete. The format and type
@@ -720,7 +720,7 @@ class Bucket(_Base):
           on the ``persist_to`` and ``replicate_to`` options.
 
         """
-        return _Base.delete(self, key, cas, quiet, persist_to=persist_to,
+        return _Base.remove(self, key, cas, quiet, persist_to=persist_to,
                             replicate_to=replicate_to)
 
     def counter(self, key, delta=1, initial=None, ttl=0):
@@ -956,7 +956,7 @@ class Bucket(_Base):
         """
         return DurabilityContext(self, persist_to, replicate_to, timeout)
 
-    def set_multi(self, keys, ttl=0, format=None, persist_to=0, replicate_to=0):
+    def upsert_multi(self, keys, ttl=0, format=None, persist_to=0, replicate_to=0):
         """Set multiple keys
 
         This follows the same semantics as
@@ -1001,17 +1001,17 @@ class Bucket(_Base):
         .. seealso:: :meth:`set`
 
         """
-        return _Base.set_multi(self, keys, ttl=ttl, format=format,
-                               persist_to=persist_to, replicate_to=replicate_to)
+        return _Base.upsert_multi(self, keys, ttl=ttl, format=format,
+                                  persist_to=persist_to, replicate_to=replicate_to)
 
-    def add_multi(self, keys, ttl=0, format=None, persist_to=0, replicate_to=0):
+    def insert_multi(self, keys, ttl=0, format=None, persist_to=0, replicate_to=0):
         """Add multiple keys.
         Multi variant of :meth:`~couchbase.connection.Bucket.add`
 
         .. seealso:: :meth:`add`, :meth:`set_multi`, :meth:`set`
 
         """
-        return _Base.add_multi(self, keys, ttl=ttl, format=format,
+        return _Base.insert_multi(self, keys, ttl=ttl, format=format,
                                persist_to=persist_to, replicate_to=replicate_to)
 
     def replace_multi(self, keys, ttl=0, format=None,
@@ -1398,10 +1398,11 @@ class Bucket(_Base):
     Lists the names of all the memcached operations. This is useful
     for classes which want to wrap all the methods
     """
-    _MEMCACHED_OPERATIONS = ('set', 'get', 'add', 'append', 'prepend',
-                             'replace', 'delete', 'counter', 'touch',
+    _MEMCACHED_OPERATIONS = ('upsert', 'get', 'insert', 'append', 'prepend',
+                             'replace', 'remove', 'counter', 'touch',
                              'lock', 'unlock', 'endure',
-                             'observe', 'rget', 'stats')
+                             'observe', 'rget', 'stats',
+                             'set', 'add', 'delete')
 
     _MEMCACHED_NOMULTI = ('stats')
 
@@ -1480,4 +1481,13 @@ class Bucket(_Base):
     @staticmethod
     def lcb_version():
         return _LCB.lcb_version()
+
+    # For compatibility
+    delete = remove
+    set = upsert
+    add = insert
+
+    delete_multi = _Base.remove_multi
+    set_multi = upsert_multi
+    add_multi = insert_multi
 
