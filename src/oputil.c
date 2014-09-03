@@ -524,14 +524,22 @@ pycbc_oputil_wait_common(pycbc_Bucket *self)
  */
 int
 pycbc_handle_durability_args(pycbc_Bucket *self,
-                             pycbc_dur_params *params,
-                             char persist_to,
-                             char replicate_to)
+    pycbc_dur_params *params, PyObject *dur_in)
 {
+    char persist_to = 0, replicate_to = 0;
+
     if (self->dur_global.persist_to || self->dur_global.replicate_to) {
-        if (persist_to == 0 && replicate_to == 0) {
+        if (dur_in == NULL || PyObject_IsTrue(dur_in) == 0) {
             persist_to = self->dur_global.persist_to;
             replicate_to = self->dur_global.replicate_to;
+        }
+    }
+
+    if (dur_in != NULL && PyObject_IsTrue(dur_in)) {
+        int rv = PyArg_ParseTuple(dur_in, "BB", &persist_to, &replicate_to);
+        if (!rv) {
+            PYCBC_EXC_WRAP(PYCBC_EXC_ARGUMENTS, 0, "Malformed durability options");
+            return -1;
         }
     }
 

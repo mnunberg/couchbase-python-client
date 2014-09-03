@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 from warnings import warn
+from collections import namedtuple
 
 from couchbase.user_constants import *
 import couchbase._libcouchbase as _LCB
@@ -79,6 +80,35 @@ def set_pickle_converters(encode, decode):
     """
     ret = _LCB._modify_helpers(pickle_encode=encode, pickle_decode=decode)
     return (ret['pickle_encode'], ret['pickle_decode'])
+
+_DurabilityRequirements = namedtuple('_DurabilityRequirements', 'persist_to replicate_to')
+
+class DurabilityRequirements(_DurabilityRequirements):
+    """
+    .. attribute persist_to::
+        The minimum number of nodes which must contain
+        this item on their disk before this function returns. Ensure that
+        you do not specify too many nodes; otherwise this function will
+        fail. Use the :attr:`server_nodes` to determine how many nodes
+        exist in the cluster.
+
+        The maximum number of nodes an item can reside on is currently
+        fixed to 4 (i.e. the "master" node, and up to three "replica"
+        nodes). This limitation is current as of Couchbase Server version
+        2.1.0.
+
+        If this parameter is set to a negative value, the maximum number
+        of possible nodes the key can reside on will be used.
+
+    .. attribute replicate_to::
+        The minimum number of replicas which must
+        contain this item in their memory for this method to succeed.
+        As with ``persist_to``, you may specify a negative value in which
+        case the requirement will be set to the maximum number possible.
+    """
+    MAX = (-1,-1)
+
+
 
 class Couchbase(object):
     @classmethod

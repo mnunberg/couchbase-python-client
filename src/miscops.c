@@ -141,22 +141,14 @@ keyop_common(pycbc_Bucket *self,
     PyObject *casobj = NULL;
     PyObject *is_quiet = NULL;
     PyObject *kobj = NULL;
-    char persist_to = 0, replicate_to = 0;
+    PyObject *durability_O = NULL;
     lcb_error_t err;
     struct pycbc_common_vars cv = PYCBC_COMMON_VARS_STATIC_INIT;
 
-    static char *kwlist[] = {
-            "keys", "cas", "quiet", "persist_to", "replicate_to", NULL
-    };
+    static char *kwlist[] = { "keys", "cas", "quiet", "durability", NULL };
 
-    rv = PyArg_ParseTupleAndKeywords(args,
-                                     kwargs,
-                                     "O|OOBB",
-                                     kwlist,
-                                     &kobj,
-                                     &casobj,
-                                     &is_quiet,
-                                     &persist_to, &replicate_to);
+    rv = PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOO", kwlist,
+        &kobj, &casobj, &is_quiet, &durability_O);
 
     if (!rv) {
         PYCBC_EXCTHROW_ARGS();
@@ -202,8 +194,7 @@ keyop_common(pycbc_Bucket *self,
 
 
     if (optype == PYCBC_CMD_DELETE) {
-        rv = pycbc_handle_durability_args(self, &cv.mres->dur,
-                                          persist_to, replicate_to);
+        rv = pycbc_handle_durability_args(self, &cv.mres->dur, durability_O);
         if (rv == 1) {
             cv.mres->mropts |= PYCBC_MRES_F_DURABILITY;
 
@@ -253,19 +244,12 @@ pycbc_Bucket_endure_multi(pycbc_Bucket *self,
 
     struct pycbc_common_vars cv = PYCBC_COMMON_VARS_STATIC_INIT;
 
-    static char *kwlist[] = {
-            "keys",
-            "persist_to",
-            "replicate_to",
-            "check_removed",
-            "timeout",
-            "interval",
-            NULL
-    };
+    static char *kwlist[] = { "keys", "durability", "check_removed", "timeout",
+            "interval", NULL };
 
     rv = PyArg_ParseTupleAndKeywords(args,
                                      kwargs,
-                                     "OBB|Off",
+                                     "O(BB)|Off",
                                      kwlist,
                                      &keys,
                                      &persist_to,

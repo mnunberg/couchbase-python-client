@@ -17,6 +17,7 @@
 
 from couchbase.exceptions import NotFoundError, ArgumentError, TimeoutError
 from couchbase.tests.base import MockTestCase
+from couchbase import DurabilityRequirements
 
 class ConnectionEndureTest(MockTestCase):
     #XXX: Require LCB 2.1.0
@@ -25,11 +26,12 @@ class ConnectionEndureTest(MockTestCase):
         self.assertRaises(ArgumentError,
                           self.cb.set,
                           "foo", "bar",
-                          persist_to=99, replicate_to=99)
+                          DurabilityRequirements(persist_to=99, replicate_to=99))
 
     def test_embedded_endure_set(self):
         key = self.gen_key("embedded_endure")
-        with self.cb.durability(persist_to=-1, replicate_to=-1, timeout=0.1):
+        dur = DurabilityRequirements(persist_to=-1, replicate_to=-1)
+        with self.cb.durability(dur, timeout=0.1):
             def cb1(res):
                 self.mockclient.endure(key,
                                        replica_count=self.mock.replicas,
@@ -57,7 +59,9 @@ class ConnectionEndureTest(MockTestCase):
                                on_master=True,
                                value=666666, cas=cas)
 
-        with self.cb.durability(persist_to=-1, replicate_to=-1, timeout=0.1):
+        dur = DurabilityRequirements.MAX
+
+        with self.cb.durability(dur, timeout=0.1):
             def cb1(res):
                 self.mockclient.purge(key, on_master=True,
                                       replica_count=self.mock.replicas)
@@ -86,8 +90,7 @@ class ConnectionEndureTest(MockTestCase):
                                value=90,
                                cas=1234)
 
-        rv = self.cb.endure(key,
-                            persist_to=-1, replicate_to=-1)
+        rv = self.cb.endure(key, durability=DurabilityRequirements.MAX)
         self.assertTrue(rv.success)
 
         # This will fail..
@@ -96,21 +99,18 @@ class ConnectionEndureTest(MockTestCase):
                                   replica_count=self.mock.replicas)
 
         obsres = self.cb.observe(key)
-        self.assertRaises(TimeoutError,
-                          self.cb.endure,
-                          key, persist_to=1, replicate_to=0,
-                          timeout=0.1)
+        dur = DurabilityRequirements(persist_to=1, replicate_to=0)
+        self.assertRaises(TimeoutError, self.cb.endure, key,
+                          durability=dur, timeout=0.1)
 
         self.mockclient.persist(key, on_master=True, replica_count=0)
-        rv = self.cb.endure(key, persist_to=1, replicate_to=0)
+        rv = self.cb.endure(key, dur)
         self.assertTrue(rv.success)
 
-        self.assertRaises(TimeoutError,
-                          self.cb.endure,
-                          key, persist_to=2,
-                          replicate_to=0,
-                          timeout=0.1)
+        dur = DurabilityRequirements(persist_to=2, replicate_to=0)
+        self.assertRaises(TimeoutError, self.cb.endure, key,
+                          durability=dur, timeout=0.1)
 
-        rv = self.cb.endure(key, persist_to=0,
-                            replicate_to=self.mock.replicas)
+        dur = DurabilityRequirements(persist_to=0, replicate_to=self.mock.replicas)
+        rv = self.cb.endure(key, durability=dur)
         self.assertTrue(rv.success)

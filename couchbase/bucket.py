@@ -65,12 +65,11 @@ class Pipeline(object):
 
 
 class DurabilityContext(object):
-
-    def __init__(self, parent, persist_to=-1, replicate_to=-1, timeout=0.0):
+    def __init__(self, parent, durability, timeout=0.0):
         self._parent = parent
         self._new = {
-            '_dur_persist_to': persist_to,
-            '_dur_replicate_to': replicate_to,
+            '_dur_persist_to': durability[0],
+            '_dur_replicate_to': durability[1],
             '_dur_timeout': int(timeout * 1000000)
         }
 
@@ -285,8 +284,7 @@ class Bucket(_Base):
     # We have these wrappers so that IDEs can do param tooltips and the like.
     # we might move this directly into C some day
 
-    def upsert(self, key, value, cas=0, ttl=0, format=None,
-               persist_to=0, replicate_to=0):
+    def upsert(self, key, value, cas=0, ttl=0, format=None, durability=None):
         """Unconditionally store the object in Couchbase.
 
         :param key: The key to set the value with. By default, the key must be
@@ -312,19 +310,8 @@ class Bucket(_Base):
           For more info see
           :attr:`~couchbase.connection.Bucket.default_format`
 
-        :param int persist_to: Perform durability checking on this many
-
-          .. versionadded:: 1.1.0
-
-          nodes for persistence to disk.
-          See :meth:`endure` for more information
-
-        :param int replicate_to: Perform durability checking on this many
-
-          .. versionadded:: 1.1.0
-
-          replicas for presence in memory. See :meth:`endure` for more
-          information.
+        :param durability: Durability requirements for the operation. See the
+          :class:`couchbase.DurabilityRequirements` for more information.
 
         :raise: :exc:`couchbase.exceptions.ArgumentError` if an
           argument is supplied that is not applicable in this context.
@@ -359,9 +346,9 @@ class Bucket(_Base):
 
         """
         return _Base.upsert(self, key, value, cas, ttl, format,
-                            persist_to, replicate_to)
+                            durability=durability)
 
-    def insert(self, key, value, ttl=0, format=None, persist_to=0, replicate_to=0):
+    def insert(self, key, value, ttl=0, format=None, durability=None):
         """
         Store an object in Couchbase unless it already exists.
 
@@ -381,10 +368,9 @@ class Bucket(_Base):
 
         """
         return _Base.insert(self, key, value, ttl=ttl, format=format,
-                            persist_to=persist_to, replicate_to=replicate_to)
+                            durability=durability)
 
-    def replace(self, key, value, cas=0, ttl=0, format=None,
-                persist_to=0, replicate_to=0):
+    def replace(self, key, value, cas=0, ttl=0, format=None, durability=None):
         """
         Store an object in Couchbase only if it already exists.
 
@@ -399,10 +385,9 @@ class Bucket(_Base):
 
         """
         return _Base.replace(self, key, value, ttl=ttl, cas=cas, format=format,
-                             persist_to=persist_to, replicate_to=replicate_to)
+                             durability=durability)
 
-    def append(self, key, value, cas=0, ttl=0, format=None,
-               persist_to=0, replicate_to=0):
+    def append(self, key, value, cas=0, ttl=0, format=None, durability=None):
         """
         Append a string to an existing value in Couchbase.
 
@@ -434,10 +419,9 @@ class Bucket(_Base):
 
         """
         return _Base.append(self, key, value, ttl=ttl, cas=cas, format=format,
-                            persist_to=persist_to, replicate_to=replicate_to)
+                            durability=durability)
 
-    def prepend(self, key, value, cas=0, ttl=0, format=None,
-                persist_to=0, replicate_to=0):
+    def prepend(self, key, value, cas=0, ttl=0, format=None, durability=None):
         """
         Prepend a string to an existing value in Couchbase.
 
@@ -446,7 +430,7 @@ class Bucket(_Base):
 
         """
         return _Base.prepend(self, key, value, ttl=ttl, cas=cas, format=format,
-                             persist_to=persist_to, replicate_to=replicate_to)
+                             durability=durability)
 
     def get(self, key, ttl=0, quiet=None, replica=False, no_format=False):
         """Obtain an object stored in Couchbase by given key.
@@ -653,7 +637,7 @@ class Bucket(_Base):
         """
         return _Base.unlock(self, key, cas=cas)
 
-    def remove(self, key, cas=0, quiet=None, persist_to=0, replicate_to=0):
+    def remove(self, key, cas=0, quiet=None, durability=None):
         """Remove the key-value entry for a given key in Couchbase.
 
         :param key: A string which is the key to delete. The format and type
@@ -670,15 +654,12 @@ class Bucket(_Base):
         :param boolean quiet:
           Follows the same semantics as `quiet` in :meth:`get`
 
-        :param int persist_to: If set, wait for the item to be deleted from
-          the storage of at least these many nodes
-
-          .. versionadded:: 1.2.0
-
-        :param int replicate_to: If set, wait for the item to be deleted from
-          the cache of at least these many nodes (excluding the master)
-
-          .. versionadded:: 1.2.0
+        :param durability: Durability constraints
+          (:class:`couchbase.DurabilityRequirements`) for the operation. Note
+          that for this operation the semantics of the durability constraints
+          are reversed; such that
+          :attr:`couchbase.DurabilityRequirements.replicate_to` means the nodes
+          the item should be deleted from (in memory) and so on.
 
         :raise: :exc:`couchbase.exceptions.NotFoundError` if the key
           does not exist on the bucket
@@ -716,12 +697,10 @@ class Bucket(_Base):
             })
 
 
-        .. seealso:: :meth:`delete_multi`, :meth:`endure` for more information
-          on the ``persist_to`` and ``replicate_to`` options.
+        .. seealso:: :meth:`delete_multi`
 
         """
-        return _Base.remove(self, key, cas, quiet, persist_to=persist_to,
-                            replicate_to=replicate_to)
+        return _Base.remove(self, key, cas, quiet, durability=durability)
 
     def counter(self, key, delta=1, initial=None, ttl=0):
         """
@@ -836,11 +815,8 @@ class Bucket(_Base):
         """
         return _Base.observe(self, key, master_only)
 
-    def endure(self, key, persist_to=-1, replicate_to=-1,
-               cas=0,
-               check_removed=False,
-               timeout=5.0,
-               interval=0.010):
+    def endure(self, key, durability=(-1,-1), cas=0, check_removed=False,
+               timeout=5.0, interval=0.010):
         """
         Wait until a key has been distributed to one or more nodes
 
@@ -865,24 +841,6 @@ class Bucket(_Base):
         method is called `endure`.
 
         :param string key: The key to endure.
-        :param int persist_to: The minimum number of nodes which must contain
-            this item on their disk before this function returns. Ensure that
-            you do not specify too many nodes; otherwise this function will
-            fail. Use the :attr:`server_nodes` to determine how many nodes
-            exist in the cluster.
-
-            The maximum number of nodes an item can reside on is currently
-            fixed to 4 (i.e. the "master" node, and up to three "replica"
-            nodes). This limitation is current as of Couchbase Server version
-            2.1.0.
-
-            If this parameter is set to a negative value, the maximum number
-            of possible nodes the key can reside on will be used.
-
-        :param int replicate_to: The minimum number of replicas which must
-            contain this item in their memory for this method to succeed.
-            As with ``persist_to``, you may specify a negative value in which
-            case the requirement will be set to the maximum number possible.
 
         :param float timeout: A timeout value in seconds before this function
             fails with an exception. Typically it should take no longer than
@@ -917,46 +875,44 @@ class Bucket(_Base):
         """
         # We really just wrap 'endure_multi'
         kv = { key : cas }
-        rvs = self.endure_multi(keys=kv,
-                                persist_to=persist_to,
-                                replicate_to=replicate_to,
+        rvs = self.endure_multi(keys=kv, durability=durability,
                                 check_removed=check_removed,
                                 timeout=timeout,
                                 interval=interval)
         return rvs[key]
 
-    def durability(self, persist_to=-1, replicate_to=-1, timeout=0.0):
+    def durability(self, durability=(-1,-1), timeout=0.0):
         """
         Returns a context manager which will apply the given
         persistence/replication settings to all mutation operations when
         active
 
-        :param int persist_to:
-        :param int replicate_to:
+        :param durability: A :class:`~couchbase.DurabilityRequirements` object
 
         See :meth:`endure` for the meaning of these two values
 
         Thus, something like::
 
-          with cb.durability(persist_to=3):
+          with cb.durability(DurabilityRequirements(persist_to=3)):
             cb.set("foo", "foo_value")
             cb.set("bar", "bar_value")
             cb.set("baz", "baz_value")
 
         is equivalent to::
 
-            cb.set("foo", "foo_value", persist_to=3)
-            cb.set("bar", "bar_value", persist_to=3)
-            cb.set("baz", "baz_value", persist_to=3)
+            durability = DurabilityRequirements(persist_to=3)
+            cb.set("foo", "foo_value", durability=durability)
+            cb.set("bar", "bar_value", durability=durability)
+            cb.set("baz", "baz_value", durability=durability)
 
 
         .. versionadded:: 1.2.0
 
         .. seealso:: :meth:`endure`
         """
-        return DurabilityContext(self, persist_to, replicate_to, timeout)
+        return DurabilityContext(self, durability, timeout)
 
-    def upsert_multi(self, keys, ttl=0, format=None, persist_to=0, replicate_to=0):
+    def upsert_multi(self, keys, ttl=0, format=None, durability=None):
         """Set multiple keys
 
         This follows the same semantics as
@@ -981,15 +937,14 @@ class Bucket(_Base):
           If specified, this is the conversion format which will be used for
           _all_ the keys.
 
-        :param int persist_to: Durability constraint for persistence.
+        :param durability: A :class:`~couchbase.DurabilityRequirements` to define
+          durability constraints for the operation.
+
           Note that it is more efficient to use :meth:`endure_multi`
           on the returned :class:`~couchbase.result.MultiResult` than
           using these parameters for a high volume of keys. Using these
           parameters however does save on latency as the constraint checking
           for each item is performed as soon as it is successfully stored.
-
-        :param int replicate_to: Durability constraints for replication.
-          See notes on the `persist_to` parameter for usage.
 
         :return: A :class:`~couchbase.result.MultiResult` object, which
           is a `dict` subclass.
@@ -1002,9 +957,9 @@ class Bucket(_Base):
 
         """
         return _Base.upsert_multi(self, keys, ttl=ttl, format=format,
-                                  persist_to=persist_to, replicate_to=replicate_to)
+                                  durability=durability)
 
-    def insert_multi(self, keys, ttl=0, format=None, persist_to=0, replicate_to=0):
+    def insert_multi(self, keys, ttl=0, format=None, durabilit=None):
         """Add multiple keys.
         Multi variant of :meth:`~couchbase.connection.Bucket.add`
 
@@ -1012,10 +967,9 @@ class Bucket(_Base):
 
         """
         return _Base.insert_multi(self, keys, ttl=ttl, format=format,
-                               persist_to=persist_to, replicate_to=replicate_to)
+                               durability=durability)
 
-    def replace_multi(self, keys, ttl=0, format=None,
-                      persist_to=0, replicate_to=0):
+    def replace_multi(self, keys, ttl=0, format=None, durability=None):
         """Replace multiple keys.
         Multi variant of :meth:`replace`
 
@@ -1023,11 +977,9 @@ class Bucket(_Base):
 
         """
         return _Base.replace_multi(self, keys, ttl=ttl, format=format,
-                                   persist_to=persist_to,
-                                   replicate_to=replicate_to)
+                                   durability=durability)
 
-    def append_multi(self, keys, ttl=0, format=None,
-                     persist_to=0, replicate_to=0):
+    def append_multi(self, keys, ttl=0, format=None, durability=None):
         """Append to multiple keys.
         Multi variant of :meth:`append`.
 
@@ -1042,12 +994,9 @@ class Bucket(_Base):
         .. seealso:: :meth:`append`, :meth:`set_multi`, :meth:`set`
 
         """
-        return _Base.append_multi(self, keys, ttl=ttl, format=format,
-                                  persist_to=persist_to,
-                                  replicate_to=replicate_to)
+        return _Base.append_multi(self, keys, ttl=ttl, format=format, durability=durability)
 
-    def prepend_multi(self, keys, ttl=0, format=None,
-                      persist_to=0, replicate_to=0):
+    def prepend_multi(self, keys, ttl=0, format=None, durability=None):
         """Prepend to multiple keys.
         Multi variant of :meth:`prepend`
 
@@ -1055,8 +1004,7 @@ class Bucket(_Base):
 
         """
         return _Base.prepend_multi(self, keys, ttl=ttl, format=format,
-                                   persist_to=persist_to,
-                                   replicate_to=replicate_to)
+                                   durability=durability)
 
     def get_multi(self, keys, ttl=0, quiet=None, replica=False, no_format=False):
         """Get multiple keys
@@ -1156,7 +1104,7 @@ class Bucket(_Base):
         """
         return _Base.observe_multi(self, keys, master_only)
 
-    def endure_multi(self, keys, persist_to=-1, replicate_to=-1,
+    def endure_multi(self, keys, durability=(-1,-1),
                      timeout=5.0,
                      interval=0.010,
                      check_removed=False):
@@ -1179,7 +1127,7 @@ class Bucket(_Base):
 
         .. seealso:: :meth:`endure`
         """
-        return _Base.endure_multi(self, keys, persist_to, replicate_to,
+        return _Base.endure_multi(self, keys, durability,
                                   timeout=timeout,
                                   interval=interval,
                                   check_removed=check_removed)

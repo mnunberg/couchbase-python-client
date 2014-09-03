@@ -229,48 +229,24 @@ set_common(pycbc_Bucket *self,
     PyObject *dict = NULL;
     PyObject *key;
     PyObject *value;
+    PyObject *durability_O;
     lcb_error_t err;
     pycbc_seqtype_t seqtype;
     struct pycbc_common_vars cv = PYCBC_COMMON_VARS_STATIC_INIT;
     struct storecmd_vars scv = { 0 };
-    char persist_to = 0, replicate_to = 0;
-
-
-    static char *kwlist_multi[] = {
-            "kv", "ttl", "format",
-            "persist_to", "replicate_to",
-            NULL
-    };
-
-    static char *kwlist_single[] = {
-            "key", "value", "cas", "ttl", "format",
-            "persist_to", "replicate_to",
-            NULL
-    };
+    static char *kwlist_multi[] = { "kv", "ttl", "format", "durability", NULL };
+    static char *kwlist_single[] = { "key", "value", "cas", "ttl", "format",
+            "durability", NULL };
 
     scv.operation = operation;
 
     if (argopts & PYCBC_ARGOPT_MULTI) {
-        rv = PyArg_ParseTupleAndKeywords(args,
-                                         kwargs,
-                                         "O|OOBB",
-                                         kwlist_multi,
-                                         &dict,
-                                         &ttl_O,
-                                         &scv.flagsobj,
-                                         &persist_to, &replicate_to);
+        rv = PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOO", kwlist_multi,
+            &dict, &ttl_O, &scv.flagsobj, &durability_O);
 
     } else {
-        rv = PyArg_ParseTupleAndKeywords(args,
-                                         kwargs,
-                                         "OO|KOOBB",
-                                         kwlist_single,
-                                         &key,
-                                         &value,
-                                         &single_cas,
-                                         &ttl_O,
-                                         &scv.flagsobj,
-                                         &persist_to, &replicate_to);
+        rv = PyArg_ParseTupleAndKeywords(args, kwargs, "OO|KOOO", kwlist_single,
+            &key, &value, &single_cas, &ttl_O, &scv.flagsobj, &durability_O);
     }
 
     if (!rv) {
@@ -303,18 +279,13 @@ set_common(pycbc_Bucket *self,
         scv.flagsobj = self->dfl_fmt;
     }
 
-    rv = pycbc_common_vars_init(&cv,
-                                self,
-                                argopts,
-                                ncmds,
-                                sizeof(lcb_store_cmd_t),
-                                1);
+    rv = pycbc_common_vars_init(&cv, self, argopts, ncmds,
+        sizeof(lcb_store_cmd_t), 1);
     if (rv < 0) {
         return NULL;
     }
 
-    rv = pycbc_handle_durability_args(self, &cv.mres->dur,
-                                      persist_to, replicate_to);
+    rv = pycbc_handle_durability_args(self, &cv.mres->dur, durability_O);
 
     if (rv == 1) {
         cv.mres->mropts |= PYCBC_MRES_F_DURABILITY;
