@@ -469,7 +469,6 @@ pycbc_Bucket__http_request(pycbc_Bucket *self,
 PyObject *
 pycbc_HttpResult__fetch(pycbc_HttpResult *self)
 {
-    lcb_error_t err;
     PyObject *ret = NULL;
 
     if (-1 == pycbc_oputil_conn_lock(self->parent)) {
@@ -504,20 +503,13 @@ pycbc_HttpResult__fetch(pycbc_HttpResult *self)
         self->rowsbuf = PyList_New(0);
     }
 
-    err = pycbc_oputil_wait_common(self->parent);
-
-    if (err != LCB_SUCCESS) {
-        PYCBC_EXCTHROW_WAIT(err);
+    pycbc_oputil_wait_common(self->parent);
+    if (maybe_raise(self)) {
         goto GT_RET;
-
-    } else {
-        if (maybe_raise(self)) {
-            goto GT_RET;
-        }
-
-        ret = self->rowsbuf;
-        self->rowsbuf = NULL;
     }
+
+    ret = self->rowsbuf;
+    self->rowsbuf = NULL;
 
     if (!pycbc_assert(self->parent->nremaining == 0)) {
         fprintf(stderr, "Remaining count unexpected. Adjusting");
