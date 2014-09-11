@@ -37,7 +37,7 @@ from couchbase.exceptions import CouchbaseError
 from couchbase.admin import Admin
 from couchbase.mockserver import CouchbaseMock, BucketSpec, MockControlClient
 from couchbase.result import (
-    MultiResult, ValueResult, OperationResult, ObserveInfo, Result)
+    MultiResult, Result, Result, ObserveInfo, Result)
 from couchbase._pyport import basestring
 from couchbase.connstr import ConnectionString
 
@@ -206,8 +206,8 @@ class ApiImplementationMixin(object):
         raise NotImplementedError()
 
     cls_MultiResult = MultiResult
-    cls_ValueResult = ValueResult
-    cls_OperationResult = OperationResult
+    cls_Result = Result
+    cls_Result = Result
     cls_ObserveInfo = ObserveInfo
     cls_Result = Result
 

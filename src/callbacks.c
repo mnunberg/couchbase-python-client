@@ -49,10 +49,6 @@ cb_thr_begin(pycbc_Bucket *self)
 
 
 enum {
-    RESTYPE_BASE = 1 << 0,
-    RESTYPE_VALUE = 1 << 1,
-    RESTYPE_OPERATION = 1 << 2,
-
     /* Extra flag indicating it's ok if it already exists */
     RESTYPE_EXISTS_OK = 1 << 3,
 
@@ -205,17 +201,9 @@ get_common_objects(const lcb_RESPBASE *resp, pycbc_Bucket **conn,
         if ( (*mres)->mropts & PYCBC_MRES_F_ITEMS) {
             *res = (pycbc_Result*)pycbc_item_new(*conn);
 
-        } else if (restype & RESTYPE_BASE) {
+        } else  {
             *res = (pycbc_Result*)pycbc_result_new(*conn);
 
-        } else if (restype & RESTYPE_OPERATION) {
-            *res = (pycbc_Result*)pycbc_opresult_new(*conn);
-
-        } else if (restype & RESTYPE_VALUE) {
-            *res = (pycbc_Result*)pycbc_valresult_new(*conn);
-
-        } else {
-            abort();
         }
 
         PyDict_SetItem(mrdict, hkey, (PyObject*)*res);
@@ -254,7 +242,7 @@ static void
 durability_chain_common(lcb_t instance, int cbtype, const lcb_RESPBASE *resp)
 {
     pycbc_Bucket *conn;
-    pycbc_OperationResult *res = NULL;
+    pycbc_Result *res = NULL;
     pycbc_MultiResult *mres;
     lcb_durability_opts_t dopts = { 0 };
     lcb_CMDENDURE cmd = { 0 };
@@ -263,8 +251,7 @@ durability_chain_common(lcb_t instance, int cbtype, const lcb_RESPBASE *resp)
     lcb_error_t err;
     int is_delete = cbtype == LCB_CALLBACK_REMOVE;
 
-    rv = get_common_objects(resp, &conn, (pycbc_Result**)&res,
-        RESTYPE_OPERATION|RESTYPE_VARCOUNT, &mres);
+    rv = get_common_objects(resp, &conn, (pycbc_Result**)&res, RESTYPE_VARCOUNT, &mres);
 
     if (rv == -1) {
         operation_completed(conn, mres);
@@ -337,11 +324,10 @@ value_callback(lcb_t instance, int cbtype, const lcb_RESPBASE *resp)
 {
     int rv;
     pycbc_Bucket *conn = NULL;
-    pycbc_ValueResult *res = NULL;
+    pycbc_Result *res = NULL;
     pycbc_MultiResult *mres = NULL;
 
-    rv = get_common_objects(resp, &conn, (pycbc_Result**)&res, RESTYPE_VALUE,
-        &mres);
+    rv = get_common_objects(resp, &conn, (pycbc_Result**)&res, 0, &mres);
 
     if (rv < 0) {
         goto GT_DONE;
@@ -386,9 +372,9 @@ static void
 keyop_simple_callback(lcb_t instance, int cbtype, const lcb_RESPBASE *resp)
 {
     int rv;
-    int optflags = RESTYPE_OPERATION;
+    int optflags = 0;
     pycbc_Bucket *conn = NULL;
-    pycbc_OperationResult *res = NULL;
+    pycbc_Result *res = NULL;
     pycbc_MultiResult *mres = NULL;
 
     if (cbtype == LCB_CALLBACK_ENDURE) {
@@ -480,7 +466,7 @@ observe_callback(lcb_t instance, int cbtype, const lcb_RESPBASE *resp_base)
     int rv;
     pycbc_ObserveInfo *oi;
     pycbc_Bucket *conn;
-    pycbc_ValueResult *vres;
+    pycbc_Result *vres;
     pycbc_MultiResult *mres;
     const lcb_RESPOBSERVE *oresp = (const lcb_RESPOBSERVE *)resp_base;
 
@@ -491,7 +477,7 @@ observe_callback(lcb_t instance, int cbtype, const lcb_RESPBASE *resp_base)
     }
 
     rv = get_common_objects(resp_base, &conn, (pycbc_Result**)&vres,
-        RESTYPE_VALUE|RESTYPE_EXISTS_OK|RESTYPE_VARCOUNT, &mres);
+        RESTYPE_EXISTS_OK|RESTYPE_VARCOUNT, &mres);
     if (rv < 0) {
         goto GT_DONE;
     }

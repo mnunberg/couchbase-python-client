@@ -19,8 +19,8 @@ from platform import python_implementation
 import couchbase._bootstrap
 from couchbase._libcouchbase import (
     Result,
-    ValueResult,
-    OperationResult,
+    Result,
+    Result,
     HttpResult,
     MultiResult,
     ObserveInfo,

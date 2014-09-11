@@ -34,7 +34,7 @@ class Item(_Item):
         :param object value: The value to initialize this item with
 
         The `Item` class is a sublcass of a
-        :class:`~couchbase.result.ValueResult`.
+        :class:`~couchbase.result.Result`.
         Its members are all writeable and accessible from this object.
 
         .. warning::

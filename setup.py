@@ -62,7 +62,6 @@ SOURCEMODS = [
         'exceptions',
         'ext',
         'result',
-        'opresult',
         'callbacks',
         'cntl',
         'convert',

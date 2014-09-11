@@ -266,17 +266,15 @@ init_libcouchbase(void)
     X(Bucket,       pycbc_BucketType_init) \
     /** Remember to keep base classes in order */ \
     X(Result,           pycbc_ResultType_init) \
-    X(OperationResult,  pycbc_OperationResultType_init) \
-    X(ValueResult,      pycbc_ValueResultType_init) \
     X(MultiResult,      pycbc_MultiResultType_init) \
+    X(AsyncResult,      pycbc_AsyncResultType_init) \
     X(HttpResult,       pycbc_HttpResultType_init) \
+    X(Item,             pycbc_ItemType_init) \
     X(Transcoder,       pycbc_TranscoderType_init) \
     X(ObserveInfo,      pycbc_ObserveInfoType_init) \
-    X(Item,             pycbc_ItemType_init) \
     X(Event,            pycbc_EventType_init) \
     X(IOEvent,          pycbc_IOEventType_init) \
-    X(TimerEvent,       pycbc_TimerEventType_init) \
-    X(AsyncResult,      pycbc_AsyncResultType_init)
+    X(TimerEvent,       pycbc_TimerEventType_init)
 
 #define X(name, inf) PyObject *cls_##name;
     X_PYTYPES(X)

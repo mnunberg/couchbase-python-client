@@ -7,7 +7,7 @@ Item Objects
 .. module:: couchbase.items
 
 The :class:`~couchbase.items.Item` class is a subclass of
-:class:`~couchbase.result.ValueResult`. It differs from its parent in that
+:class:`~couchbase.result.Result`. It differs from its parent in that
 it is instantiable by the user, and can also contain fields not originally
 defined in the superclass (i.e. it has a ``__dict__`` field).
 

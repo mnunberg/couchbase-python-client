@@ -72,8 +72,8 @@ Format Options
 
 The following constants may be used as values to the `format` option
 in methods where this is supported. This is also the value returned in the
-:attr:`~couchbase.result.ValueResult.flags` attribute of the
-:class:`~couchbase.result.ValueResult` object from a
+:attr:`~couchbase.result.Result.flags` attribute of the
+:class:`~couchbase.result.Result` object from a
 :meth:`~couchbase.connection.Connection.get` operation.
 
 Each format specifier has specific rules about what data types it accepts.

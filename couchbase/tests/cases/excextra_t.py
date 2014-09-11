@@ -40,7 +40,7 @@ class ConnectionExcExtraTest(ConnectionTestCase):
         self.assertEqual(exc.key, key)
         self.assertIsInstance(exc.all_results, self.cls_MultiResult)
         self.assertTrue(key in exc.all_results)
-        self.assertIsInstance(exc.all_results[key], self.cls_ValueResult)
+        self.assertIsInstance(exc.all_results[key], self.cls_Result)
         self.assertEqual(exc.all_results[key].rc, exc.rc)
 
         str(exc)

@@ -52,7 +52,7 @@ handle_single_keyop(pycbc_Bucket *self, struct pycbc_common_vars *cv, int optype
     if ( (optype == PYCBC_CMD_UNLOCK || optype == PYCBC_CMD_ENDURE)
             && PYCBC_OPRES_CHECK(curkey)) {
         curval = curkey;
-        curkey = ((pycbc_OperationResult*)curkey)->key;
+        curkey = ((pycbc_Result*)curkey)->key;
     }
 
     rv = pycbc_tc_encode_key(self, &curkey, (void**)&key, &nkey);
@@ -79,7 +79,7 @@ handle_single_keyop(pycbc_Bucket *self, struct pycbc_common_vars *cv, int optype
 
         } else if (PYCBC_OPRES_CHECK(curval)) {
             /* If we're passed a Result object, just extract its CAS */
-            cas = ((pycbc_OperationResult*)curval)->cas;
+            cas = ((pycbc_Result*)curval)->cas;
 
         } else if (PyNumber_Check(curval)) {
             cas = pycbc_IntAsULL(curval);

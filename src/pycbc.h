@@ -344,35 +344,20 @@ typedef struct {
 #define pycbc_Result_HEAD \
     PyObject_HEAD \
     lcb_error_t rc; \
-    PyObject *key;
-
-#define pycbc_OpResult_HEAD \
-    pycbc_Result_HEAD \
-    lcb_uint64_t cas;
+    lcb_U32 flags; \
+    PyObject *key; \
+    PyObject *value; \
+    lcb_U64 cas; \
 
 typedef struct {
     pycbc_Result_HEAD
 } pycbc_Result;
 
-typedef struct {
-    pycbc_OpResult_HEAD
-} pycbc_OperationResult;
-
-
-#define pycbc_ValResult_HEAD \
-    pycbc_OpResult_HEAD \
-    PyObject *value; \
-    lcb_uint32_t flags;
-
-typedef struct {
-    pycbc_ValResult_HEAD
-} pycbc_ValueResult;
-
 /**
  * Item or 'Document' object
  */
 typedef struct {
-    pycbc_ValResult_HEAD
+    pycbc_Result_HEAD
     PyObject* vdict;
 } pycbc_Item;
 
@@ -599,18 +584,18 @@ extern PyTypeObject pycbc_AsyncResultType;
 extern PyTypeObject pycbc_ResultType;
 
 /* opresult.c */
-extern PyTypeObject pycbc_OperationResultType;
-extern PyTypeObject pycbc_ValueResultType;
+extern PyTypeObject pycbc_ResultType;
+extern PyTypeObject pycbc_ResultType;
 extern PyTypeObject pycbc_HttpResultType;
 
 /**
  * Result type check macros
  */
 #define PYCBC_VALRES_CHECK(o) \
-        PyObject_IsInstance(o, &pycbc_ValueResultType)
+        PyObject_IsInstance(o, &pycbc_ResultType)
 
 #define PYCBC_OPRES_CHECK(o) \
-    PyObject_IsInstance(o, (PyObject*)&pycbc_OperationResultType)
+    PyObject_IsInstance(o, (PyObject*)&pycbc_ResultType)
 
 extern PyTypeObject pycbc_ArgumentType;
 
@@ -718,8 +703,8 @@ PyObject *pycbc_lcb_errstr(lcb_t instance, lcb_error_t err);
 int pycbc_ResultType_init(PyObject **ptr);
 int pycbc_BucketType_init(PyObject **ptr);
 int pycbc_MultiResultType_init(PyObject **ptr);
-int pycbc_ValueResultType_init(PyObject **ptr);
-int pycbc_OperationResultType_init(PyObject **ptr);
+int pycbc_ResultType_init(PyObject **ptr);
+int pycbc_ResultType_init(PyObject **ptr);
 int pycbc_HttpResultType_init(PyObject **ptr);
 int pycbc_TranscoderType_init(PyObject **ptr);
 int pycbc_ObserveInfoType_init(PyObject **ptr);
@@ -740,8 +725,6 @@ int pycbc_AsyncResultType_init(PyObject **ptr);
  */
 PyObject *pycbc_result_new(pycbc_Bucket *parent);
 PyObject *pycbc_multiresult_new(pycbc_Bucket *parent);
-pycbc_ValueResult *pycbc_valresult_new(pycbc_Bucket *parent);
-pycbc_OperationResult *pycbc_opresult_new(pycbc_Bucket *parent);
 pycbc_HttpResult *pycbc_httpresult_new(pycbc_Bucket *parent);
 pycbc_Item *pycbc_item_new(pycbc_Bucket *parent);
 

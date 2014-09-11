@@ -27,11 +27,11 @@ class ConnectionResultsTest(ConnectionTestCase):
 
     def __test_oprsesult(self, rv, check_exact=True, exprc=0):
         # Ensure they can be stringified
-        self.assertIsInstance(rv, self.cls_OperationResult)
+        self.assertIsInstance(rv, self.cls_Result)
         self.assertIsInstance(rv, self.cls_Result)
 
         if check_exact:
-            self.assertEqual(rv.__class__, self.cls_OperationResult)
+            self.assertEqual(rv.__class__, self.cls_Result)
 
         self.assertIsInstance(rv.cas, INT_TYPES)
         self.assertIsInstance(rv.rc, INT_TYPES)
@@ -46,14 +46,14 @@ class ConnectionResultsTest(ConnectionTestCase):
         self.assertIsInstance(str(rv), str)
 
     def __test_valresult(self, rv, value):
-        self.assertEqual(rv.__class__, self.cls_ValueResult)
+        self.assertEqual(rv.__class__, self.cls_Result)
         self.__test_oprsesult(rv, check_exact=False)
 
         self.assertEqual(rv.value, value)
         self.assertIsInstance(rv.flags, INT_TYPES)
 
     def test_results(self):
-        # Test OperationResult/ValueResult fields
+        # Test Result/Result fields
         key = self.gen_key("opresult")
         rv = self.cb.set(key, "value")
         self.__test_oprsesult(rv)

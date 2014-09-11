@@ -18,7 +18,7 @@ from couchbase.tests.base import ConnectionTestCase
 from txcouchbase.tests.base import gen_base
 from couchbase.exceptions import NotFoundError
 from couchbase.result import (
-    Result, OperationResult, ValueResult, MultiResult)
+    Result, Result, Result, MultiResult)
 
 
 class OperationTestCase(gen_base(ConnectionTestCase)):
@@ -27,7 +27,7 @@ class OperationTestCase(gen_base(ConnectionTestCase)):
         key = self.gen_key("test_simple_set")
         d = cb.set(key, "simple_Value")
         def t(ret):
-            self.assertIsInstance(ret, OperationResult)
+            self.assertIsInstance(ret, Result)
             self.assertEqual(ret.key, key)
             del ret
 
@@ -43,7 +43,7 @@ class OperationTestCase(gen_base(ConnectionTestCase)):
         cb.set(key, value)
         d_get = cb.get(key)
         def t(ret):
-            self.assertIsInstance(ret, ValueResult)
+            self.assertIsInstance(ret, Result)
             self.assertEqual(ret.key, key)
             self.assertEqual(ret.value, value)
 

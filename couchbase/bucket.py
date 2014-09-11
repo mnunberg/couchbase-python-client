@@ -522,7 +522,7 @@ class Bucket(_Base):
           ``0`` then the key never expires (and any existing expiration is
           removed)
 
-        :return: :class:`couchbase.result.OperationResult`
+        :return: :class:`couchbase.result.Result`
 
         Update the expiration time of a key ::
 
@@ -796,7 +796,7 @@ class Bucket(_Base):
         The ``observe`` function maps to the low-level ``OBSERVE``
         command.
 
-        It returns a :class:`couchbase.result.ValueResult`
+        It returns a :class:`couchbase.result.Result`
         object with the ``value`` field
         set to a list of :class:`~couchbase.result.ObserveInfo`
         objects. Each element in the list
@@ -866,7 +866,7 @@ class Bucket(_Base):
             operation. Passing the CAS ensures that only replies from servers
             with a CAS matching this parameter are accepted
 
-        :return: A :class:`~couchbase.result.OperationResult`
+        :return: A :class:`~couchbase.result.Result`
 
         :raise: :exc:`~couchbase.exceptions.CouchbaseError`.
             see :meth:`set` and :meth:`get` for possible errors
@@ -1123,7 +1123,7 @@ class Bucket(_Base):
             * A sequence of :class:`~couchbase.result.Result` objects
 
         :return: A :class:`~couchbase.result.MultiResult` object of
-            :class:`~couchbase.result.OperationResult` items.
+            :class:`~couchbase.result.Result` items.
 
         .. seealso:: :meth:`endure`
         """

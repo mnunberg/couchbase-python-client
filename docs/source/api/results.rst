@@ -16,19 +16,11 @@ This is the base class for all result operations
 
    .. autoattribute:: key
 
-
-.. autoclass:: OperationResult
-   :show-inheritance:
-   :no-undoc-members:
-
-   .. autoattribute cas
-
-
-.. autoclass:: ValueResult
-   :show-inheritance:
-   :members:
-
    .. autoattribute:: cas
+
+   .. autoattribute:: value
+
+   .. autoattribute:: flags
 
 
 .. autoclass:: HttpResult
@@ -45,7 +37,7 @@ This is the base class for all result operations
     This class is intended to serve as a container for multiple results returned
     from an operation. It is a subclass of `dict` and may be used as such. The
     keys will be the keys on which the operations were performed and the values
-    will be the results of the operation (i.e. a :class:`OperationResult` object)
+    will be the results of the operation (i.e. a :class:`Result` object)
 
     The :attr:`all_ok` field can be used to quickly examine the object for errors
     (in case something like ``quiet`` was passed to
