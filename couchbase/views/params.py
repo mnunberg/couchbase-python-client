@@ -20,6 +20,7 @@
 
 import json
 from copy import deepcopy
+from collections import namedtuple
 
 from couchbase._pyport import long, xrange, ulp, basestring, parse_qs
 from couchbase.exceptions import ArgumentError
@@ -46,6 +47,24 @@ class _Unspec(object):
         return "<Placeholder>"
 
 UNSPEC = _Unspec()
+
+class BBox(object):
+    def __init__(self, x1=0, y1=0, x2=0, y2=0):
+        """
+        Bounding box parameter for a spatial query.
+
+        :param x1: The X coordinate of the bottom left corner
+        :param y1: The Y coordinate of the bottom left corner
+        :param x2: The X coordinate of the top right corner
+        :param y2: The Y coordinate of the top right corner
+        """
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+
+    def _as_array(self):
+        return [self.x1, self.y1, self.x2, self.y2]
 
 
 def _bool_param_handler(input):
@@ -153,6 +172,12 @@ def _jarry_param_handler(input):
     return ret
 
 
+def _bbox_param_handler(input):
+    if not isinstance(input, BBox):
+        raise ValueError('bbox must be a BBox instance')
+    return ','.join([str(x) for x in input._as_array()])
+
+
 # Some more constants. Yippie!
 class Params(object):
     # Random, unspecified value.
@@ -183,6 +208,7 @@ class Params(object):
     MAPKEY_MULTI            = "mapkey_multi"
     MAPKEY_RANGE            = "mapkey_range"
     DOCKEY_RANGE            = "dockey_range"
+    BBOX                    = "bbox"
 
 _HANDLER_MAP = {
     Params.DESCENDING        : _bool_param_handler,
@@ -205,7 +231,8 @@ _HANDLER_MAP = {
     Params.SKIP              : _num_param_handler,
     Params.LIMIT             : _num_param_handler,
     Params.DEBUG             : _bool_param_handler,
-    Params.CONNECTION_TIMEOUT: _num_param_handler
+    Params.CONNECTION_TIMEOUT: _num_param_handler,
+    Params.BBOX              : _bbox_param_handler,
 }
 
 
@@ -215,7 +242,27 @@ def _gendoc(param):
             return "\n:data:`Params.{0}`".format(k)
 
 
-class Query(object):
+def _rangeprop(k_sugar, k_start, k_end):
+    def getter(self):
+        return self._user_options.get(k_sugar, UNSPEC)
+
+    def setter(self, value):
+        self._set_range_common(k_sugar, k_start, k_end, value)
+
+    return property(getter, setter, fdel=None, doc=_gendoc(k_sugar))
+
+
+def _genprop(p):
+    def getter(self):
+        return self._get_common(p)
+
+    def setter(self, value):
+        self._set_common(p, value)
+
+    return property(getter, setter, fdel=None, doc=_gendoc(p))
+
+
+class QueryBase(object):
     def _set_common(self, param, value, set_user=True):
         # Invalidate encoded string
         self._encoded = None
@@ -293,60 +340,6 @@ class Query(object):
             self._set_common(p, value[ix], set_user=False)
 
         self._user_options[k_sugar] = value
-
-    def __rangeprop(k_sugar, k_start, k_end):
-        def getter(self):
-            return self._user_options.get(k_sugar, UNSPEC)
-
-        def setter(self, value):
-            self._set_range_common(k_sugar, k_start, k_end, value)
-
-        return property(getter, setter, fdel=None, doc=_gendoc(k_sugar))
-
-    def __genprop(p):
-        def getter(self):
-            return self._get_common(p)
-
-        def setter(self, value):
-            self._set_common(p, value)
-
-        return property(getter, setter, fdel=None, doc=_gendoc(p))
-
-
-    descending          = __genprop(Params.DESCENDING)
-
-    # Use the range parameters. They're easier
-    startkey            = __genprop(Params.STARTKEY)
-    endkey              = __genprop(Params.ENDKEY)
-    startkey_docid      = __genprop(Params.STARTKEY_DOCID)
-    endkey_docid        = __genprop(Params.ENDKEY_DOCID)
-
-    keys                = __genprop(Params.KEYS)
-    key                 = __genprop(Params.KEY)
-    inclusive_end       = __genprop(Params.INCLUSIVE_END)
-    skip                = __genprop(Params.SKIP)
-    limit               = __genprop(Params.LIMIT)
-    on_error            = __genprop(Params.ON_ERROR)
-    stale               = __genprop(Params.STALE)
-    debug               = __genprop(Params.DEBUG)
-    connection_timeout  = __genprop(Params.CONNECTION_TIMEOUT)
-    full_set            = __genprop(Params.FULL_SET)
-
-    reduce              = __genprop(Params.REDUCE)
-    group               = __genprop(Params.GROUP)
-    group_level         = __genprop(Params.GROUP_LEVEL)
-
-    # Aliases:
-    mapkey_single       = __genprop(Params.KEY)
-    mapkey_multi        = __genprop(Params.KEYS)
-
-    mapkey_range        = __rangeprop(Params.MAPKEY_RANGE,
-                                      Params.STARTKEY, Params.ENDKEY)
-
-    dockey_range        = __rangeprop(Params.DOCKEY_RANGE,
-                                      Params.STARTKEY_DOCID,
-                                      Params.ENDKEY_DOCID)
-
 
     STRING_RANGE_END = json.loads('"\u0FFF"')
     """
@@ -431,7 +424,7 @@ class Query(object):
         return self
 
     @classmethod
-    def from_any(cls, params):
+    def from_any(cls, params, **ctor_opts):
         """
         Creates a new Query object from input.
 
@@ -459,7 +452,12 @@ class Query(object):
             return deepcopy(params)
 
         elif isinstance(params, dict):
-            return cls(**params)
+            ctor_opts.update(**params)
+            if cls is QueryBase:
+                if 'bbox' in params:
+                    return SpatialQuery(**ctor_opts)
+                else:
+                    return ViewQuery(**ctor_opts)
 
         elif isinstance(params, basestring):
             ret = cls()
@@ -540,11 +538,57 @@ class Query(object):
         return "Query:'{0}'".format(self.encoded)
 
 
+class ViewQuery(QueryBase):
+    descending          = _genprop(Params.DESCENDING)
+
+    # Use the range parameters. They're easier
+    startkey            = _genprop(Params.STARTKEY)
+    endkey              = _genprop(Params.ENDKEY)
+    startkey_docid      = _genprop(Params.STARTKEY_DOCID)
+    endkey_docid        = _genprop(Params.ENDKEY_DOCID)
+
+    keys                = _genprop(Params.KEYS)
+    key                 = _genprop(Params.KEY)
+    inclusive_end       = _genprop(Params.INCLUSIVE_END)
+    skip                = _genprop(Params.SKIP)
+    limit               = _genprop(Params.LIMIT)
+    on_error            = _genprop(Params.ON_ERROR)
+    stale               = _genprop(Params.STALE)
+    debug               = _genprop(Params.DEBUG)
+    connection_timeout  = _genprop(Params.CONNECTION_TIMEOUT)
+    full_set            = _genprop(Params.FULL_SET)
+
+    reduce              = _genprop(Params.REDUCE)
+    group               = _genprop(Params.GROUP)
+    group_level         = _genprop(Params.GROUP_LEVEL)
+
+    # Aliases:
+    mapkey_single       = _genprop(Params.KEY)
+    mapkey_multi        = _genprop(Params.KEYS)
+
+    mapkey_range        = _rangeprop(Params.MAPKEY_RANGE,
+                                     Params.STARTKEY, Params.ENDKEY)
+
+    dockey_range        = _rangeprop(Params.DOCKEY_RANGE,
+                                     Params.STARTKEY_DOCID,
+                                     Params.ENDKEY_DOCID)
+
+
+class SpatialQuery(QueryBase):
+    stale               = _genprop(Params.STALE)
+    skip                = _genprop(Params.SKIP)
+    limit               = _genprop(Params.LIMIT)
+    bbox                = _genprop(Params.BBOX)
+
+
+class Query(ViewQuery):
+    pass
+
+
 def make_options_string(input, unrecognized_ok=False, passthrough=False):
-    if not isinstance(input, Query):
-        input = Query(passthrough=passthrough,
-                      unrecognized_ok=unrecognized_ok,
-                      **input)
+    if not isinstance(input, QueryBase):
+        input = QueryBase.from_any(input, unrecognized_ok=unrecognized_ok,
+                                   passthrough=passthrough)
     return input.encoded
 
 

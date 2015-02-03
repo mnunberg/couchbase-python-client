@@ -131,9 +131,9 @@ Row Processing
 
 .. _view_options:
 
------------------
+^^^^^^^^^^^^
 View Options
------------------
+^^^^^^^^^^^^
 
 This document explains the various view options, and how they are treated
 by the Couchbase library.
@@ -683,3 +683,87 @@ functions.
     strings.
 
     This has the benefit of providing normal behavior for known options.
+
+================
+Geospatial Views
+================
+
+.. warning::
+
+    Geospatial views are considered an experimental feature in current
+    versions of Couchbase Server (the latest version at the time of
+    writing being 3.0.2). As such, the feature exposed in the SDK itself
+    is too inherently experimental
+
+Geospatial views allow one to query documents based on their *location*,
+which is filtered through something called a *bounding box*.
+
+In terms of interface, they are quite similar to normal map-reduce views,
+and most of the documentation above applies to geospatial views as well.
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Creating Geospatial Views
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Creating a geospatial view may be done in a manner similar to creating
+a normal view; except that the design document defines the spatial
+view in the ``spatial`` field, rather than in the ``views`` field.
+
+.. code-block:: python
+
+    ddoc = {
+        'spatial': {
+            'geoview':
+                '''
+                if (doc.loc) {
+                    emit({
+                        type: "Point",
+                        geometry: doc.loc
+                    }, doc.name);
+                }
+                '''
+        }
+    }
+    cb.bucket_manager().design_create('geo', ddoc)
+
+
+The above snippet will create a geospatial design doc (``geo``) with a single
+view (called ``geoview``).
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Querying Geospatial Views
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To query a geospatial view, you must pass an instance of :class:`.SpatialQuery`
+as the ``query`` keyword argument to either the :class:`.View` constructor, or
+the :meth:`.Bucket.query` method.
+
+.. currentmodule:: couchbase.views.params
+
+.. class:: SpatialQuery
+
+    .. automethod:: __init__
+
+    .. attribute:: bbox
+
+        The *bounding box* for the results. The value for this attribute
+        should be supplied in the form of a :class:`.BBox` instance.
+
+    .. attribute:: skip
+
+        See :attr:`.Query.skip`
+
+    .. attribute:: limit
+
+        See :attr:`.Query.limit`
+
+    .. attribute:: stale
+
+        See :attr:`.Query.stale`
+
+
+.. class:: BBox
+
+    .. automethod:: __init__
