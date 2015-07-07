@@ -440,6 +440,7 @@ pycbc_oputil_conn_unlock(pycbc_Bucket *self)
     PyThread_release_lock(self->lock);
 }
 
+
 void
 pycbc_oputil_wait_common(pycbc_Bucket *self)
 {
@@ -493,4 +494,31 @@ pycbc_handle_durability_args(pycbc_Bucket *self,
     }
 
     return 0;
+}
+
+int
+pycbc_encode_sd_keypath(pycbc_Bucket *conn, PyObject *src,
+                      pycbc_pybuffer *keybuf, pycbc_pybuffer *pathbuf)
+{
+    PyObject *kobj, *pthobj;
+    int rv;
+
+    if (!PyTuple_Check(src) || PyTuple_GET_SIZE(src) != 2) {
+        PYCBC_EXC_WRAP(PYCBC_EXC_ARGUMENTS, 0,
+                       "Sub-document key must be a 2-tuple");
+        return -1;
+    }
+
+    kobj = PyTuple_GET_ITEM(src, 0);
+    pthobj = PyTuple_GET_ITEM(src, 1);
+
+    rv = pycbc_tc_encode_key(conn, kobj, keybuf);
+    if (rv != 0) {
+        return rv;
+    }
+    rv = pycbc_tc_simple_encode(pthobj, pathbuf, PYCBC_FMT_UTF8);
+    if (rv != 0) {
+        PYCBC_PYBUF_RELEASE(keybuf);
+    }
+    return rv;
 }

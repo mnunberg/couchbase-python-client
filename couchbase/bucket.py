@@ -719,6 +719,60 @@ class Bucket(_Base):
         """
         return _Base.counter(self, key, delta=delta, initial=initial, ttl=ttl)
 
+    def mutate_in(self, key, *specs, **kwargs):
+        """Perform multiple atomic modifications within a document.
+
+        :param key: The key of the document to modify
+        :param specs: A list of specs (See the `couchbase.subdocument`
+        module)
+        :param kwargs: CAS, etc.
+        :return: A :class:`.Result` object.
+
+        Here's an example of adding a new tag to a "user" document
+        and incrementing a modification counter::
+
+            import couchbase.subdocument as SD
+            # ....
+            cb.mutate_in('user',
+                         SD.add_unique('tags', 'dog'),
+                         SD.counter('updates', +1))
+        """
+        return super(Bucket, self).mutate_in(key, specs, **kwargs)
+
+    def lookup_in(self, key, *specs, **kwargs):
+        """Atomically retrieve one or more paths from a document.
+
+        :param key: The key of the document to lookup
+        :param spec: A list of specs (see the `couchbase.subdocument` module)
+        :return: A :class:`.ValueResult` object.
+            The :attr:`~.ValueResult.value` will contain a list of
+            `(err, value)` tuples, each tuple corresponding to the
+            spec of the same position.
+
+        Example::
+
+            import couchbase.subdocument as SD
+            rv = cb.lookup_in('user',
+                              SD.get('email'),
+                              SD.get('name'),
+                              SD.exists('friends.therock'))
+
+            err_email, email = rv.value[0]
+            err_name, name = rv.value[1]
+            err_friend, _ = rv.value[2]
+        """
+        return super(Bucket, self).lookup_in({key: specs}, **kwargs)
+
+    def retrieve_in(self, key, *paths, **kwargs):
+        """Atomically fetch one or more paths from a document.
+
+        This method is identical to :meth:`lookup_in`, but functions as a
+        convenience method: Paths are specified as strings (which this
+        method converts to `subdocument.get(s)`
+        """
+        import couchbase.subdocument as SD
+        return self.lookup_in(key, *tuple(SD.get(x) for x in paths), **kwargs)
+
     def incr(self, key, amount=1, **kwargs):
         _depr('incr', 'counter')
         return self.counter(key, delta=amount, **kwargs)

@@ -86,6 +86,7 @@ SOURCEMODS = [
         'iops',
         'connevents',
         'pipeline',
+        'subdoc',
         'views',
         'n1ql',
         ]

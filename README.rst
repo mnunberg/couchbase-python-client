@@ -18,6 +18,10 @@ Client for Couchbase_.
 Building and Installing
 -----------------------
 
+**For the subdoc branch, you must checkout
+https://github.com/mnunberg/libcouchbase/.
+Use the `subdoc` branch there and follow installation instructions**
+
 This only applies to building from source. If you are using a Windows
 installer then everything (other than the server) is already included.
 See below for windows snapshot releases.
