@@ -7,42 +7,51 @@ Client for Couchbase_.
 .. image:: https://travis-ci.org/couchbase/couchbase-python-client.png
     :target: https://travis-ci.org/couchbase/couchbase-python-client
 
+-----------------------
+Using the subdoc branch
+-----------------------
 
-.. note::
-
-    This is the documentation for the 2.x version of the client. This is
-    mostly compatible with the older version. Please refer to the
-    *release12* branch for the older version.
 
 -----------------------
 Building and Installing
 -----------------------
 
-**For the subdoc branch, you must checkout
-https://github.com/mnunberg/libcouchbase/.
-Use the `subdoc` branch there and follow installation instructions**
+1. Get a Couchbase 4.5 Developer Preview installation:
 
-This only applies to building from source. If you are using a Windows
-installer then everything (other than the server) is already included.
-See below for windows snapshot releases.
+    Go to http://www.couchbase.com/nosql-databases/downloads
 
-Also note that these instructions apply to building from source.
-You can always get the latest supported release version from pypi_.
+2. Install libcouchbase (version 2.5.6; run `cbc version` to see current version):
+
+    For first time installations on Linux (any platform)::
+
+        wget http://packages.couchbase.com/clients/c/couchbase-csdk-setup
+        sudo couchbase-csdk-setup
+
+    Upgrades on Linux::
+
+        sudo apt-get install libcouchbase2-core libcouchbase-dev
+        # OR
+        sudo yum install libcouchbase2-core libcouchbase-devel
+
+    Mac OS X::
+
+        brew update
+        brew install libcouchbase
 
 
-If you have a recent version of *pip*, you may use the latest development
-version by issuing the following incantation
+3. Install the subdoc branch via *pip*
 
-.. code-block:: sh
+    .. code-block::
 
-    pip install git+git://github.com/couchbase/couchbase-python-client
+        pip install git+https://github.com/mnunberg/couchbase-python-client.git@subdoc
+
 
 ~~~~~~~~~~~~~
 Prerequisites
 ~~~~~~~~~~~~~
 
 - Couchbase Server (http://couchbase.com/download)
-- libcouchbase_. version 2.4.7 or greater (Bundled in Windows installer)
+- libcouchbase_. version 2.5.6 or greater (Bundled in Windows installer)
 - libcouchbase development files.
 - Python development files
 - A C compiler.
@@ -281,7 +290,7 @@ License
 The Couchbase Python SDK is licensed under the Apache License 2.0.
 
 .. _Couchbase: http://couchbase.com
-.. _libcouchbase: http://couchbase.com/develop/c/current
+.. _libcouchbase: http://developer.couchbase.com/documentation/server/4.0/sdks/c-2.4/c-intro.html
 .. _JIRA: http://couchbase.com/issues/browse/pycbc
 .. _freenode: http://freenode.net/irc_servers.shtml
 .. _pypi: http://pypy.python.org/pypi/couchbase
