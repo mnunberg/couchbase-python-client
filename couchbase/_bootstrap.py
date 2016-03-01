@@ -35,6 +35,7 @@ import couchbase.exceptions as E
 import couchbase._libcouchbase as C
 from couchbase.items import ItemCollection, ItemOptionDict, ItemSequence
 from couchbase.result import SubdocResult
+from couchbase.subdocument import MultiValue
 
 
 def _result__repr__(self):
@@ -146,7 +147,8 @@ def run_init(m):
                     itmopts_seq_type=ItemSequence,
                     fmt_auto=_FMT_AUTO,
                     view_path_helper=_view_path_helper,
-                    sdresult_type=SubdocResult)
+                    sdresult_type=SubdocResult,
+                    sd_multival_type=MultiValue)
 
 run_init(C)
 

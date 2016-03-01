@@ -32,6 +32,18 @@ def _gen_4spec(op, path, value, create=False):
     return Spec(op, path, value, int(create))
 
 
+class MultiValue(tuple):
+    """
+    This class is used to pass multiple values to :meth:`push_first` and
+    :meth:`push_last`. Without this container object, the library will assume
+    """
+    def __new__(cls, *args, **kwargs):
+        return super(MultiValue, cls).__new__(cls, tuple(args))
+
+    def __repr__(self):
+        return 'MultiValue({0})'.format(tuple.__repr__(self))
+
+
 # The following functions return either 2-tuples or 4-tuples for operations
 # which are converted into mutation or lookup specifications
 
@@ -84,35 +96,39 @@ def upsert(path, value, create_parents=False):
     return _gen_4spec(LCB_SDCMD_DICT_UPSERT, path, value, create_parents)
 
 
-def push_last(path, value, create_parents=False):
+def push_last(path, *values, **kwargs):
     """
-    Add a new value to the end of an array
+    Add new values to the end of an array
     :param path: Path to the array. The path should contain the _array itself_
     and not an element _within_ the array
-    :param value: Value to append
+    :param values: one or more values to append
     :param create_parents: Create the array if it does not exist
     """
-    return _gen_4spec(LCB_SDCMD_ARRAY_ADD_LAST, path, value, create_parents)
+    return _gen_4spec(LCB_SDCMD_ARRAY_ADD_LAST, path,
+                      MultiValue(*values), kwargs.get('create_parents', False))
 
 
-def push_first(path, value, create_parents=False):
+def push_first(path, *values, **kwargs):
     """
-    Add a new value to the beginning of an array
-    :param path: Path to the array
-    :param value: Value to prepend
+    Add new values to the beginning of an array
+    :param path: Path to the array. The path should contain the _array itself_
+    and not an element _within_ the array
+    :param values: one or more values to append
     :param create_parents: Create the array if it does not exist
     """
-    return _gen_4spec(LCB_SDCMD_ARRAY_ADD_FIRST, path, value, create_parents)
+    return _gen_4spec(LCB_SDCMD_ARRAY_ADD_FIRST, path,
+                      MultiValue(*values), kwargs.get('create_parents', False))
 
 
-def push_at(path, value):
+def push_at(path, *values):
     """
-    Insert an item at a given position within an array
+    Insert items at a given position within an array
     :param path: The path indicating where the item should be placed. The path
         _should_ contain the desired position
-    :param value: Value to insert
+    :param values: Values to insert
     """
-    return _gen_4spec(LCB_SDCMD_ARRAY_INSERT, path, value, False)
+    return _gen_4spec(LCB_SDCMD_ARRAY_INSERT, path,
+                      MultiValue(*values), False)
 
 
 def push_unique(path, value, create_parents=False):

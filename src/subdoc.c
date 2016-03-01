@@ -33,22 +33,65 @@ sd_convert_spec(PyObject *pyspec, lcb_SDSPEC *sdspec,
         return -1;
     }
     if (pycbc_tc_simple_encode(path, pathbuf, PYCBC_FMT_UTF8) != 0) {
-        PYCBC_PYBUF_RELEASE(pathbuf);
-        return -1;
+        goto GT_ERROR;
     }
 
     sdspec->sdcmd = op;
     sdspec->options = create ? LCB_SDSPEC_F_MKINTERMEDIATES : 0;
     LCB_SDSPEC_SET_PATH(sdspec, pathbuf->buffer, pathbuf->length);
     if (val != NULL) {
-        int rv = pycbc_tc_simple_encode(val, valbuf, PYCBC_FMT_JSON);
-        if (rv != 0) {
-            PYCBC_PYBUF_RELEASE(pathbuf);
-            return -1;
+        int is_multival = 0;
+
+        if (PyObject_IsInstance(val, pycbc_helpers.sd_multival_type)) {
+            /* Verify the operation allows it */
+            switch (op) {
+            case LCB_SDCMD_ARRAY_ADD_FIRST:
+            case LCB_SDCMD_ARRAY_ADD_LAST:
+            case LCB_SDCMD_ARRAY_INSERT:
+                is_multival = 1;
+                break;
+            default:
+                PYCBC_EXC_WRAP_OBJ(PYCBC_EXC_ARGUMENTS, 0,
+                    "MultiValue not supported for operation", pyspec);
+                goto GT_ERROR;
+            }
         }
+
+        if (pycbc_tc_simple_encode(val, valbuf, PYCBC_FMT_JSON) != 0) {
+            goto GT_ERROR;
+        }
+
+        if (is_multival) {
+            /* Strip first and last [ */
+            const char *buf = (const char *)valbuf->buffer;
+            size_t len = valbuf->length;
+
+            for (; isspace(*buf) && len; len--, buf++) {
+            }
+            for (; len && isspace(buf[len-1]); len--) {
+            }
+            if (len < 3 || buf[0] != '[' || buf[len-1] != ']') {
+                PYCBC_EXC_WRAP_OBJ(PYCBC_EXC_ENCODING, 0,
+                    "Serialized MultiValue shows invalid JSON (maybe empty?)",
+                    pyspec);
+                goto GT_ERROR;
+            }
+
+            buf++;
+            len -= 2;
+            valbuf->buffer = buf;
+            valbuf->length = len;
+            fprintf(stderr, "JSON Value: %.*s\n", (int)len, buf);
+        }
+
         LCB_SDSPEC_SET_VALUE(sdspec, valbuf->buffer, valbuf->length);
     }
     return 0;
+
+    GT_ERROR:
+    PYCBC_PYBUF_RELEASE(valbuf);
+    PYCBC_PYBUF_RELEASE(pathbuf);
+    return -1;
 }
 
 int

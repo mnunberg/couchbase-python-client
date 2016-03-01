@@ -657,7 +657,8 @@ extern PyObject *pycbc_ExceptionType;
     X(itmopts_seq_type) \
     X(fmt_auto) \
     X(view_path_helper) \
-    X(sdresult_type)
+    X(sdresult_type) \
+    X(sd_multival_type)
 
 #define PYCBC_XHELPERS_STRS(X) \
     X(tcname_encode_key, PYCBC_TCNAME_ENCODE_KEY) \
