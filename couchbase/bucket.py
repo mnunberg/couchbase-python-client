@@ -29,6 +29,7 @@ import couchbase.exceptions as exceptions
 from couchbase.views.params import make_dvpath, make_options_string
 from couchbase.views.iterator import View
 from couchbase.n1ql import N1QLQuery, N1QLRequest
+import couchbase.fulltext as _FTS
 from couchbase._pyport import basestring
 
 
@@ -1374,6 +1375,12 @@ class Bucket(_Base):
 
         itercls = kwargs.pop('itercls', N1QLRequest)
         return itercls(query, self, *args, **kwargs)
+
+    def search(self, index, query, *args, **kwargs):
+        params = kwargs.pop('params', _FTS.Params())
+        itercls = kwargs.pop('itercls', _FTS.SearchRequest)
+        body = _FTS.make_search_body(index, query, params)
+        return itercls(body, self, *args, **kwargs)
 
     def __repr__(self):
         return ('<{modname}.{cls} bucket={bucket}, nodes={nodes} at 0x{oid:x}>'
